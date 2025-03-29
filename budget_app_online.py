@@ -6,7 +6,7 @@ from datetime import datetime
 st.set_page_config(page_title="💶 Balance Tracker", page_icon="💶", layout="centered")
 st.markdown("<h1 style='text-align: center;'>📋 Balance Tracker</h1>", unsafe_allow_html=True)
 
-# ------------------ Browser Storage ------------------
+# ------------------ Storage ------------------
 storage = LocalStorage(key="balance-tracker")
 
 # Load balance
@@ -22,56 +22,54 @@ try:
     history = storage.get("history")
 except:
     history = []
-
 if not isinstance(history, list):
     history = []
 
-# ------------------ Display Balance ------------------
-st.markdown(f"<h3 style='text-align: center;'>💰 Current Balance: €{balance:.2f}</h3>", unsafe_allow_html=True)
+# ------------------ Show Balance ------------------
+st.markdown(
+    f"<div style='text-align:center; font-size: 24px; margin: 10px 0;'>💰 Current Balance: <b>€{balance:.2f}</b></div>",
+    unsafe_allow_html=True
+)
 
-# ------------------ User Input ------------------
-st.markdown("### ➕ Enter a Transaction")
-amount = st.number_input("Enter amount", step=0.01, format="%.2f")
-description = st.text_input("Enter description (e.g., groceries, rent)")
-action = st.radio("Choose action", ["Subtract", "Add"])
+# ------------------ Input Form ------------------
+with st.container():
+    st.markdown("### ➕ Enter a Transaction")
+    amount = st.number_input("Amount", step=0.01, format="%.2f")
+    description = st.text_input("Description (e.g., groceries)")
+    action = st.radio("Action", ["Subtract", "Add"], horizontal=True)
 
-col1, col2 = st.columns(2)
+# ------------------ Apply Transaction Button ------------------
+if st.button("✅ Apply Transaction", use_container_width=True) and amount > 0:
+    if action == "Subtract":
+        balance -= amount
+        operator = f"-€{amount:.2f}"
+    else:
+        balance += amount
+        operator = f"+€{amount:.2f}"
 
-# ------------------ Apply Transaction ------------------
-with col1:
-    if st.button("✅ Apply Transaction") and amount > 0:
-        if action == "Subtract":
-            balance -= amount
-            operator = f"-€{amount:.2f}"
-        else:
-            balance += amount
-            operator = f"+€{amount:.2f}"
+    entry = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "operation": operator,
+        "description": description if description else "(no description)",
+        "balance": f"€{balance:.2f}"
+    }
 
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        entry = {
-            "timestamp": timestamp,
-            "operation": operator,
-            "description": description if description else "(no description)",
-            "balance": f"€{balance:.2f}"
-        }
+    history.append(entry)
+    storage.set("balance", balance)
+    storage.set("history", history)
+    st.experimental_rerun()
 
-        history.append(entry)
-        storage.set("balance", balance)
-        storage.set("history", history)
-        st.experimental_rerun()
+# ------------------ Management Buttons ------------------
+with st.container():
+    st.markdown("### 🛠️ Manage App")
 
-# ------------------ Reset Balance ------------------
-with col2:
-    if st.button("🔁 Reset Balance"):
+    if st.button("🔁 Reset Balance & Clear History", use_container_width=True):
         storage.set("balance", 400.0)
         storage.set("history", [])
         st.success("Balance reset and history cleared.")
         st.experimental_rerun()
 
-# ------------------ Erase History Only ------------------
-col3, _ = st.columns(2)
-with col3:
-    if st.button("🗑️ Erase History Only"):
+    if st.button("🗑️ Erase History Only", use_container_width=True):
         cleared_entry = [{
             "timestamp": "",
             "operation": "",
@@ -82,8 +80,8 @@ with col3:
         st.success("Transaction history erased!")
         st.experimental_rerun()
 
-# ------------------ Display History ------------------
-st.markdown("### 🧾 Transaction History (Last 10)")
+# ------------------ History ------------------
+st.markdown("### 🧾 Transaction History")
 
 if isinstance(history, list) and history and isinstance(history[0], dict):
     if history[0]["description"] == "History cleared":
@@ -91,7 +89,8 @@ if isinstance(history, list) and history and isinstance(history[0], dict):
     else:
         for item in reversed(history[-10:]):
             st.markdown(
-                f"- `{item['timestamp']}` | **{item['operation']}** | {item['description']} → {item['balance']}"
+                f"<div style='font-size: 14px;'>🕒 <code>{item['timestamp']}</code> <br> {item['operation']} | {item['description']} → <b>{item['balance']}</b></div><hr>",
+                unsafe_allow_html=True
             )
 else:
     st.info("No transactions yet.")
