@@ -70,7 +70,6 @@ with st.container():
     if st.button("🗑️ Erase History Only", use_container_width=True):
         st.session_state.history = []
         storage.set("history", st.session_state.history)
-        st.success("Transaction history erased.")
         st.experimental_rerun()
 
 # ------------------ Transaction History ------------------
