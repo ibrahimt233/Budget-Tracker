@@ -9,16 +9,24 @@ st.markdown("<h1 style='text-align: center;'>📋 Balance Tracker</h1>", unsafe_
 # ------------------ Setup Local Storage ------------------
 storage = LocalStorage(key="balance-tracker")
 
-# ------------------ Load from Storage ------------------
+# ------------------ Reload from Storage Every Time ------------------
 stored_balance = storage.get("balance")
 stored_history = storage.get("history")
 
-# ------------------ Initialize Session State ------------------
-if "balance" not in st.session_state:
-    st.session_state.balance = stored_balance if isinstance(stored_balance, (int, float)) else 400.0
+if not isinstance(stored_balance, (int, float)):
+    stored_balance = 400.0
+if not isinstance(stored_history, list):
+    stored_history = []
 
-if "history" not in st.session_state:
-    st.session_state.history = stored_history if isinstance(stored_history, list) else []
+# ------------------ Load into Session State ------------------
+st.session_state.balance = stored_balance
+st.session_state.history = stored_history
+
+# ------------------ Optional Feedback Flags ------------------
+if "history_erased" not in st.session_state:
+    st.session_state.history_erased = False
+if "balance_reset" not in st.session_state:
+    st.session_state.balance_reset = False
 
 # ------------------ Display Balance ------------------
 st.markdown(
@@ -29,9 +37,9 @@ st.markdown(
 # ------------------ Input Section ------------------
 with st.container():
     st.markdown("### ➕ Enter a Transaction")
-    amount = st.number_input("Amount", step=0.01, format="%.2f", key="amount_input")
-    description = st.text_input("Description (e.g., groceries)", key="desc_input")
-    action = st.radio("Action", ["Subtract", "Add"], horizontal=True, key="action_radio")
+    amount = st.number_input("Amount", step=0.01, format="%.2f")
+    description = st.text_input("Description (e.g., groceries)")
+    action = st.radio("Action", ["Subtract", "Add"], horizontal=True)
 
 # ------------------ Apply Transaction ------------------
 if st.button("✅ Apply Transaction", use_container_width=True):
@@ -52,11 +60,14 @@ if st.button("✅ Apply Transaction", use_container_width=True):
 
         st.session_state.history.append(entry)
 
-        # Save updated values to browser storage
+        # Save to local storage
         storage.set("balance", st.session_state.balance)
         storage.set("history", st.session_state.history)
 
-        st.success("Transaction added.")
+        # Reset any flags
+        st.session_state.history_erased = False
+        st.session_state.balance_reset = False
+
         st.experimental_rerun()
 
 # ------------------ Manage Buttons ------------------
@@ -66,19 +77,29 @@ with st.container():
     if st.button("🔁 Reset Balance & Clear History", use_container_width=True):
         st.session_state.balance = 400.0
         st.session_state.history = []
+        st.session_state.history_erased = False
+        st.session_state.balance_reset = True
+
         storage.set("balance", st.session_state.balance)
         storage.set("history", [])
-        st.success("Balance reset and history cleared.")
+
         st.experimental_rerun()
 
     if st.button("🗑️ Erase History Only", use_container_width=True):
         st.session_state.history = []
+        st.session_state.history_erased = True
+        st.session_state.balance_reset = False
+
         storage.set("history", [])
-        st.success("Transaction history erased.")
         st.experimental_rerun()
 
 # ------------------ Transaction History ------------------
 st.markdown("### 🧾 Transaction History")
+
+if st.session_state.balance_reset:
+    st.success("Balance reset and history cleared.")
+elif st.session_state.history_erased:
+    st.success("Transaction history erased.")
 
 if st.session_state.history:
     for item in reversed(st.session_state.history[-10:]):
@@ -87,5 +108,5 @@ if st.session_state.history:
             f"{item['operation']} | {item['description']} → <b>{item['balance']}</b></div><hr>",
             unsafe_allow_html=True
         )
-else:
+elif not st.session_state.history_erased:
     st.info("No transactions yet.")
