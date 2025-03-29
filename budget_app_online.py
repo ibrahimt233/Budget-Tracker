@@ -6,39 +6,39 @@ from datetime import datetime
 st.set_page_config(page_title="💶 Balance Tracker", page_icon="💶", layout="centered")
 st.markdown("<h1 style='text-align: center;'>📋 Balance Tracker</h1>", unsafe_allow_html=True)
 
-# ------------------ Setup Local Storage ------------------
+# ------------------ Setup Browser Storage ------------------
 storage = LocalStorage(key="balance-tracker")
 
-# ------------------ Always Load from Storage ------------------
+# ------------------ Load Data from Browser Storage ------------------
 stored_balance = storage.get("balance")
 stored_history = storage.get("history")
 
 # Ensure valid types
 if not isinstance(stored_balance, (int, float)):
     stored_balance = 400.0
+
 if not isinstance(stored_history, list):
     stored_history = []
 
-# ------------------ Session flags for notifications ------------------
+# ------------------ Session Flags for Notifications ------------------
 if "show_erased_msg" not in st.session_state:
     st.session_state.show_erased_msg = False
 if "show_reset_msg" not in st.session_state:
     st.session_state.show_reset_msg = False
 
-# ------------------ Display Balance ------------------
+# ------------------ Display Current Balance ------------------
 st.markdown(
-    f"<div style='text-align:center; font-size: 24px; margin: 10px 0;'>💰 Current Balance: <b>€{stored_balance:.2f}</b></div>",
+    f"<div style='text-align:center; font-size: 24px;'>💰 Current Balance: <b>€{stored_balance:.2f}</b></div>",
     unsafe_allow_html=True
 )
 
-# ------------------ Input Section ------------------
+# ------------------ Transaction Input ------------------
 with st.container():
     st.markdown("### ➕ Enter a Transaction")
-    amount = st.number_input("Amount", step=0.01, format="%.2f", key="amount_input")
-    description = st.text_input("Description (e.g., groceries)", key="desc_input")
-    action = st.radio("Action", ["Subtract", "Add"], horizontal=True, key="action_radio")
+    amount = st.number_input("Amount", step=0.01, format="%.2f")
+    description = st.text_input("Description (e.g., groceries)")
+    action = st.radio("Action", ["Subtract", "Add"], horizontal=True)
 
-# ------------------ Apply Transaction ------------------
 if st.button("✅ Apply Transaction", use_container_width=True):
     if amount > 0:
         if action == "Subtract":
@@ -57,35 +57,47 @@ if st.button("✅ Apply Transaction", use_container_width=True):
 
         new_history = stored_history + [entry]
 
-        storage.set("balance", new_balance)
-        storage.set("history", new_history)
-
-        st.experimental_rerun()
+        try:
+            storage.set("balance", new_balance)
+            storage.set("history", new_history)
+        except Exception as e:
+            st.error(f"Failed to save data: {e}")
+        else:
+            st.success("Transaction added.")
+            st.experimental_rerun()
 
 # ------------------ Manage Buttons ------------------
 with st.container():
     st.markdown("### 🛠️ Manage App")
 
     if st.button("🔁 Reset Balance & Clear History", use_container_width=True):
-        storage.set("balance", 400.0)
-        storage.set("history", [])
-        st.session_state.show_reset_msg = True
-        st.session_state.show_erased_msg = False
-        st.experimental_rerun()
+        try:
+            storage.set("balance", 400.0)
+            storage.set("history", [])
+            st.session_state.show_reset_msg = True
+            st.session_state.show_erased_msg = False
+        except Exception as e:
+            st.error(f"Reset failed: {e}")
+        else:
+            st.experimental_rerun()
 
     if st.button("🗑️ Erase History Only", use_container_width=True):
-        storage.set("history", [])
-        st.session_state.show_erased_msg = True
-        st.session_state.show_reset_msg = False
-        st.experimental_rerun()
+        try:
+            storage.set("history", [])
+            st.session_state.show_erased_msg = True
+            st.session_state.show_reset_msg = False
+        except Exception as e:
+            st.error(f"Failed to erase history: {e}")
+        else:
+            st.experimental_rerun()
 
-# ------------------ Reload fresh after any action ------------------
+# ------------------ Reload Data After Update ------------------
 stored_balance = storage.get("balance")
 stored_history = storage.get("history")
 if not isinstance(stored_history, list):
     stored_history = []
 
-# ------------------ Notifications ------------------
+# ------------------ Notification Messages ------------------
 if st.session_state.show_reset_msg:
     st.success("Balance reset and history cleared.")
     st.session_state.show_reset_msg = False
