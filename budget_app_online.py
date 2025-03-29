@@ -73,7 +73,7 @@ with st.container():
     if st.button("🔁 Reset Balance & Clear History", use_container_width=True):
         try:
             storage.set("balance", 400.0)
-            storage.set("history", [])
+            storage.delete("history")
             st.session_state.show_reset_msg = True
             st.session_state.show_erased_msg = False
         except Exception as e:
@@ -83,7 +83,7 @@ with st.container():
 
     if st.button("🗑️ Erase History Only", use_container_width=True):
         try:
-            storage.set("history", [])
+            storage.delete("history")
             st.session_state.show_erased_msg = True
             st.session_state.show_reset_msg = False
         except Exception as e:
@@ -91,7 +91,7 @@ with st.container():
         else:
             st.experimental_rerun()
 
-# ------------------ Reload Data After Update ------------------
+# ------------------ Reload Fresh After Action ------------------
 stored_balance = storage.get("balance")
 stored_history = storage.get("history")
 if not isinstance(stored_history, list):
