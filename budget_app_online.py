@@ -9,7 +9,7 @@ st.markdown("<h1 style='text-align: center;'>📋 Balance Tracker</h1>", unsafe_
 # ------------------ Setup Local Storage ------------------
 storage = LocalStorage(key="balance-tracker")
 
-# ------------------ Reload from Storage Every Time ------------------
+# ------------------ Always Reload from Storage ------------------
 stored_balance = storage.get("balance")
 stored_history = storage.get("history")
 
@@ -18,15 +18,19 @@ if not isinstance(stored_balance, (int, float)):
 if not isinstance(stored_history, list):
     stored_history = []
 
-# ------------------ Load into Session State ------------------
-st.session_state.balance = stored_balance
-st.session_state.history = stored_history
-
-# ------------------ Optional Feedback Flags ------------------
+# ------------------ Initialize Session State ------------------
+if "balance" not in st.session_state:
+    st.session_state.balance = stored_balance
+if "history" not in st.session_state:
+    st.session_state.history = stored_history
 if "history_erased" not in st.session_state:
     st.session_state.history_erased = False
 if "balance_reset" not in st.session_state:
     st.session_state.balance_reset = False
+
+# ✅ FIX: If history is no longer empty, reset erased flag
+if st.session_state.history and st.session_state.history_erased:
+    st.session_state.history_erased = False
 
 # ------------------ Display Balance ------------------
 st.markdown(
@@ -60,13 +64,8 @@ if st.button("✅ Apply Transaction", use_container_width=True):
 
         st.session_state.history.append(entry)
 
-        # Save to local storage
         storage.set("balance", st.session_state.balance)
         storage.set("history", st.session_state.history)
-
-        # Reset any flags
-        st.session_state.history_erased = False
-        st.session_state.balance_reset = False
 
         st.experimental_rerun()
 
@@ -77,27 +76,26 @@ with st.container():
     if st.button("🔁 Reset Balance & Clear History", use_container_width=True):
         st.session_state.balance = 400.0
         st.session_state.history = []
-        st.session_state.history_erased = False
         st.session_state.balance_reset = True
-
-        storage.set("balance", st.session_state.balance)
+        st.session_state.history_erased = False
+        storage.set("balance", 400.0)
         storage.set("history", [])
-
         st.experimental_rerun()
 
     if st.button("🗑️ Erase History Only", use_container_width=True):
         st.session_state.history = []
         st.session_state.history_erased = True
         st.session_state.balance_reset = False
-
         storage.set("history", [])
         st.experimental_rerun()
 
 # ------------------ Transaction History ------------------
 st.markdown("### 🧾 Transaction History")
 
+# ✅ Only show these messages once
 if st.session_state.balance_reset:
     st.success("Balance reset and history cleared.")
+    st.session_state.balance_reset = False
 elif st.session_state.history_erased:
     st.success("Transaction history erased.")
 
