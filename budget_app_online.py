@@ -16,9 +16,6 @@ except Exception:
 if balance is None:
     balance = 400.0
 
-# Display current balance
-st.write(f"### Current Balance: €{balance:.2f}")
-
 # Input field for transaction
 transaction = st.number_input("Enter transaction amount", step=0.01, format="%.2f")
 
@@ -26,10 +23,14 @@ transaction = st.number_input("Enter transaction amount", step=0.01, format="%.2
 if st.button("Apply Transaction"):
     balance -= transaction
     storage.set("balance", balance)
-    st.experimental_rerun()
+    # ✅ immediately show the new value
+    st.success(f"Transaction applied! New balance: €{balance:.2f}")
 
 # Reset balance
 if st.button("Reset Balance"):
     balance = 400.0
     storage.set("balance", balance)
-    st.experimental_rerun()
+    st.success("Balance reset to €400.00")
+
+# Display current balance
+st.write(f"### Current Balance: €{balance:.2f}")
