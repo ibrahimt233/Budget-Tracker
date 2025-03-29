@@ -9,25 +9,18 @@ st.markdown("<h1 style='text-align: center;'>📋 Balance Tracker</h1>", unsafe_
 # ------------------ Setup Local Storage ------------------
 storage = LocalStorage(key="balance-tracker")
 
-# Load balance
-try:
-    balance = storage.get("balance")
-except:
-    balance = None
-if balance is None:
-    balance = 400.0
+# ------------------ Initialize Session State ------------------
+if "balance" not in st.session_state:
+    stored_balance = storage.get("balance")
+    st.session_state.balance = stored_balance if isinstance(stored_balance, (int, float)) else 400.0
 
-# Load history
-try:
-    history = storage.get("history")
-except:
-    history = []
-if not isinstance(history, list):
-    history = []
+if "history" not in st.session_state:
+    stored_history = storage.get("history")
+    st.session_state.history = stored_history if isinstance(stored_history, list) else []
 
 # ------------------ Display Balance ------------------
 st.markdown(
-    f"<div style='text-align:center; font-size: 24px; margin: 10px 0;'>💰 Current Balance: <b>€{balance:.2f}</b></div>",
+    f"<div style='text-align:center; font-size: 24px; margin: 10px 0;'>💰 Current Balance: <b>€{st.session_state.balance:.2f}</b></div>",
     unsafe_allow_html=True
 )
 
@@ -41,27 +34,25 @@ with st.container():
 # ------------------ Apply Transaction ------------------
 if st.button("✅ Apply Transaction", use_container_width=True) and amount > 0:
     if action == "Subtract":
-        balance -= amount
+        st.session_state.balance -= amount
         operator = f"-€{amount:.2f}"
     else:
-        balance += amount
+        st.session_state.balance += amount
         operator = f"+€{amount:.2f}"
 
     entry = {
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "operation": operator,
         "description": description if description else "(no description)",
-        "balance": f"€{balance:.2f}"
+        "balance": f"€{st.session_state.balance:.2f}"
     }
 
-    # Append to clean history
-    if not isinstance(history, list):
-        history = []
-    history.append(entry)
+    st.session_state.history.append(entry)
 
-    # Save updated data
-    storage.set("balance", balance)
-    storage.set("history", history)
+    # Save to local storage
+    storage.set("balance", st.session_state.balance)
+    storage.set("history", st.session_state.history)
+
     st.experimental_rerun()
 
 # ------------------ Manage Buttons ------------------
@@ -69,24 +60,24 @@ with st.container():
     st.markdown("### 🛠️ Manage App")
 
     if st.button("🔁 Reset Balance & Clear History", use_container_width=True):
-        balance = 400.0
-        history = []
-        storage.set("balance", balance)
-        storage.set("history", history)
+        st.session_state.balance = 400.0
+        st.session_state.history = []
+        storage.set("balance", st.session_state.balance)
+        storage.set("history", st.session_state.history)
         st.success("Balance reset and history cleared.")
         st.experimental_rerun()
 
     if st.button("🗑️ Erase History Only", use_container_width=True):
-        history = []
-        storage.set("history", history)
+        st.session_state.history = []
+        storage.set("history", st.session_state.history)
         st.success("Transaction history erased.")
         st.experimental_rerun()
 
 # ------------------ Transaction History ------------------
 st.markdown("### 🧾 Transaction History")
 
-if history:
-    for item in reversed(history[-10:]):
+if st.session_state.history:
+    for item in reversed(st.session_state.history[-10:]):
         st.markdown(
             f"<div style='font-size: 14px;'>🕒 <code>{item['timestamp']}</code><br>"
             f"{item['operation']} | {item['description']} → <b>{item['balance']}</b></div><hr>",
