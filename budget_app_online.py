@@ -6,7 +6,7 @@ from datetime import datetime
 st.set_page_config(page_title="💶 Balance Tracker", page_icon="💶", layout="centered")
 st.markdown("<h1 style='text-align: center;'>📋 Balance Tracker</h1>", unsafe_allow_html=True)
 
-# ------------------ Storage ------------------
+# ------------------ Storage Setup ------------------
 storage = LocalStorage(key="balance-tracker")
 
 # Load balance
@@ -25,7 +25,7 @@ except:
 if not isinstance(history, list):
     history = []
 
-# ------------------ Show Balance ------------------
+# ------------------ Display Balance ------------------
 st.markdown(
     f"<div style='text-align:center; font-size: 24px; margin: 10px 0;'>💰 Current Balance: <b>€{balance:.2f}</b></div>",
     unsafe_allow_html=True
@@ -38,8 +38,12 @@ with st.container():
     description = st.text_input("Description (e.g., groceries)")
     action = st.radio("Action", ["Subtract", "Add"], horizontal=True)
 
-# ------------------ Apply Transaction Button ------------------
+# ------------------ Apply Transaction ------------------
 if st.button("✅ Apply Transaction", use_container_width=True) and amount > 0:
+    # Remove "History cleared" placeholder if present
+    if history and isinstance(history[0], dict) and history[0].get("description") == "History cleared":
+        history = []
+
     if action == "Subtract":
         balance -= amount
         operator = f"-€{amount:.2f}"
@@ -80,16 +84,17 @@ with st.container():
         st.success("Transaction history erased!")
         st.experimental_rerun()
 
-# ------------------ History ------------------
+# ------------------ Display History ------------------
 st.markdown("### 🧾 Transaction History")
 
 if isinstance(history, list) and history and isinstance(history[0], dict):
-    if history[0]["description"] == "History cleared":
+    if history[0].get("description") == "History cleared":
         st.info("🧹 Transaction history has been erased.")
     else:
         for item in reversed(history[-10:]):
             st.markdown(
-                f"<div style='font-size: 14px;'>🕒 <code>{item['timestamp']}</code> <br> {item['operation']} | {item['description']} → <b>{item['balance']}</b></div><hr>",
+                f"<div style='font-size: 14px;'>🕒 <code>{item['timestamp']}</code><br>"
+                f"{item['operation']} | {item['description']} → <b>{item['balance']}</b></div><hr>",
                 unsafe_allow_html=True
             )
 else:
