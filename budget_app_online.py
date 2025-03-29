@@ -2,62 +2,78 @@ import streamlit as st
 from streamlit_browser_storage import LocalStorage
 from datetime import datetime
 
-st.set_page_config(page_title="💶 Balance Tracker", page_icon="💶")
-st.title("💶 Balance Tracker")
+st.set_page_config(page_title="💶 Balance Tracker", page_icon="💶", layout="centered")
+st.markdown("<h1 style='text-align: center;'>📋 Balance Tracker</h1>", unsafe_allow_html=True)
 
-# Initialize browser storage
+# Initialize LocalStorage with a key
 storage = LocalStorage(key="balance-tracker")
 
-# Get current balance
+# Get stored balance or default to 400
 try:
     balance = storage.get("balance")
-except Exception:
+except:
     balance = None
-
 if balance is None:
     balance = 400.0
 
-# Get transaction history (as a list of dictionaries)
+# Get stored history or empty list
 try:
     history = storage.get("history")
-except Exception:
+except:
     history = []
 
+# Make sure history is a list
 if not isinstance(history, list):
     history = []
 
-# Show current balance
-st.markdown(f"### 💰 Current Balance: **€{balance:.2f}**")
+# 💰 Display current balance
+st.markdown(f"<h3 style='text-align: center;'>💰 Current Balance: €{balance:.2f}</h3>", unsafe_allow_html=True)
 
-# --- Input fields ---
-transaction = st.number_input("Enter amount", step=0.01, format="%.2f")
+# 📥 Transaction input
+st.markdown("### ➕ Enter a transaction")
+amount = st.number_input("Enter amount", step=0.01, format="%.2f")
 description = st.text_input("Enter description (e.g., groceries, rent)")
 action = st.radio("Choose action", ["Subtract", "Add"])
 
 col1, col2 = st.columns(2)
 
-# --- Apply Transaction ---
+# ✅ Apply transaction
 with col1:
-    if st.button("✅ Apply Transaction") and transaction > 0:
+    if st.button("✅ Apply Transaction") and amount > 0:
         if action == "Subtract":
-            balance -= transaction
-            operation = f"-€{transaction:.2f}"
+            balance -= amount
+            operator = f"-€{amount:.2f}"
         else:
-            balance += transaction
-            operation = f"+€{transaction:.2f}"
+            balance += amount
+            operator = f"+€{amount:.2f}"
 
-        # Save new balance
-        storage.set("balance", balance)
-
-        # Build history entry
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         entry = {
             "timestamp": timestamp,
-            "operation": operation,
-            "description": description,
+            "operation": operator,
+            "description": description if description else "(no description)",
             "balance": f"€{balance:.2f}"
         }
 
-        # Update history
+        # Save new state
         history.append(entry)
-        storage.set
+        storage.set("balance", balance)
+        storage.set("history", history)
+        st.experimental_rerun()
+
+# 🔁 Reset
+with col2:
+    if st.button("🔁 Reset Balance"):
+        storage.set("balance", 400.0)
+        storage.set("history", [])
+        st.experimental_rerun()
+
+# 🧾 Show history
+st.markdown("### 🧾 Transaction History (Last 10)")
+if history:
+    for item in reversed(history[-10:]):
+        st.markdown(
+            f"- `{item['timestamp']}` | **{item['operation']}** | {item['description']} → {item['balance']}"
+        )
+else:
+    st.info("No transactions yet.")
