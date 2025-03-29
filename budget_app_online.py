@@ -2,14 +2,14 @@ import streamlit as st
 from streamlit_browser_storage import LocalStorage
 from datetime import datetime
 
-# --------------------- App Settings ---------------------
+# ------------------ App Settings ------------------
 st.set_page_config(page_title="💶 Balance Tracker", page_icon="💶", layout="centered")
 st.markdown("<h1 style='text-align: center;'>📋 Balance Tracker</h1>", unsafe_allow_html=True)
 
-# --------------------- Local Storage ---------------------
+# ------------------ Browser Storage ------------------
 storage = LocalStorage(key="balance-tracker")
 
-# Get stored balance
+# Load balance
 try:
     balance = storage.get("balance")
 except:
@@ -17,20 +17,19 @@ except:
 if balance is None:
     balance = 400.0
 
-# Get stored history
+# Load history
 try:
     history = storage.get("history")
 except:
     history = []
 
-# Ensure history is usable
 if not isinstance(history, list):
     history = []
 
-# --------------------- Display Balance ---------------------
+# ------------------ Display Balance ------------------
 st.markdown(f"<h3 style='text-align: center;'>💰 Current Balance: €{balance:.2f}</h3>", unsafe_allow_html=True)
 
-# --------------------- Transaction Input ---------------------
+# ------------------ User Input ------------------
 st.markdown("### ➕ Enter a Transaction")
 amount = st.number_input("Enter amount", step=0.01, format="%.2f")
 description = st.text_input("Enter description (e.g., groceries, rent)")
@@ -38,7 +37,7 @@ action = st.radio("Choose action", ["Subtract", "Add"])
 
 col1, col2 = st.columns(2)
 
-# --------------------- Apply Transaction ---------------------
+# ------------------ Apply Transaction ------------------
 with col1:
     if st.button("✅ Apply Transaction") and amount > 0:
         if action == "Subtract":
@@ -61,7 +60,7 @@ with col1:
         storage.set("history", history)
         st.experimental_rerun()
 
-# --------------------- Reset Balance ---------------------
+# ------------------ Reset Balance ------------------
 with col2:
     if st.button("🔁 Reset Balance"):
         storage.set("balance", 400.0)
@@ -69,23 +68,30 @@ with col2:
         st.success("Balance reset and history cleared.")
         st.experimental_rerun()
 
-# --------------------- Erase History Only ---------------------
+# ------------------ Erase History Only ------------------
 col3, _ = st.columns(2)
 with col3:
     if st.button("🗑️ Erase History Only"):
-        storage.set("history", ["-- History cleared --"])
+        cleared_entry = [{
+            "timestamp": "",
+            "operation": "",
+            "description": "History cleared",
+            "balance": ""
+        }]
+        storage.set("history", cleared_entry)
         st.success("Transaction history erased!")
         st.experimental_rerun()
 
-# --------------------- Show Transaction History ---------------------
+# ------------------ Display History ------------------
 st.markdown("### 🧾 Transaction History (Last 10)")
 
 if isinstance(history, list) and history and isinstance(history[0], dict):
-    for item in reversed(history[-10:]):
-        st.markdown(
-            f"- `{item['timestamp']}` | **{item['operation']}** | {item['description']} → {item['balance']}"
-        )
-elif isinstance(history, list) and history == ["-- History cleared --"]:
-    st.info("🧹 Transaction history has been erased.")
+    if history[0]["description"] == "History cleared":
+        st.info("🧹 Transaction history has been erased.")
+    else:
+        for item in reversed(history[-10:]):
+            st.markdown(
+                f"- `{item['timestamp']}` | **{item['operation']}** | {item['description']} → {item['balance']}"
+            )
 else:
     st.info("No transactions yet.")
