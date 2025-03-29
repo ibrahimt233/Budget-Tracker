@@ -2,78 +2,109 @@ import streamlit as st
 from streamlit_browser_storage import LocalStorage
 from datetime import datetime
 
+# ------------------ App Config ------------------
 st.set_page_config(page_title="💶 Balance Tracker", page_icon="💶", layout="centered")
 st.markdown("<h1 style='text-align: center;'>📋 Balance Tracker</h1>", unsafe_allow_html=True)
 
-# Initialize LocalStorage with a key
+# ------------------ Setup Local Storage ------------------
 storage = LocalStorage(key="balance-tracker")
 
-# Get stored balance or default to 400
-try:
-    balance = storage.get("balance")
-except:
-    balance = None
-if balance is None:
-    balance = 400.0
+# ------------------ Always Reload from Storage ------------------
+stored_balance = storage.get("balance")
+stored_history = storage.get("history")
 
-# Get stored history or empty list
-try:
-    history = storage.get("history")
-except:
-    history = []
+if not isinstance(stored_balance, (int, float)):
+    stored_balance = 400.0
+if not isinstance(stored_history, list):
+    stored_history = []
 
-# Make sure history is a list
-if not isinstance(history, list):
-    history = []
+# ------------------ Initialize Session State ------------------
+if "balance" not in st.session_state:
+    st.session_state.balance = stored_balance
+if "history" not in st.session_state:
+    st.session_state.history = stored_history
+if "history_erased" not in st.session_state:
+    st.session_state.history_erased = False
+if "balance_reset" not in st.session_state:
+    st.session_state.balance_reset = False
 
-# 💰 Display current balance
-st.markdown(f"<h3 style='text-align: center;'>💰 Current Balance: €{balance:.2f}</h3>", unsafe_allow_html=True)
+# ✅ FIX: If history is no longer empty, reset erased flag
+if st.session_state.history and st.session_state.history_erased:
+    st.session_state.history_erased = False
 
-# 📥 Transaction input
-st.markdown("### ➕ Enter a transaction")
-amount = st.number_input("Enter amount", step=0.01, format="%.2f")
-description = st.text_input("Enter description (e.g., groceries, rent)")
-action = st.radio("Choose action", ["Subtract", "Add"])
+# ------------------ Display Balance ------------------
+st.markdown(
+    f"<div style='text-align:center; font-size: 24px; margin: 10px 0;'>💰 Current Balance: <b>€{st.session_state.balance:.2f}</b></div>",
+    unsafe_allow_html=True
+)
 
-col1, col2 = st.columns(2)
+# ------------------ Input Section ------------------
+with st.container():
+    st.markdown("### ➕ Enter a Transaction")
+    amount = st.number_input("Amount", step=0.01, format="%.2f")
+    description = st.text_input("Description (e.g., groceries)")
+    action = st.radio("Action", ["Subtract", "Add"], horizontal=True)
 
-# ✅ Apply transaction
-with col1:
-    if st.button("✅ Apply Transaction") and amount > 0:
+# ------------------ Apply Transaction ------------------
+if st.button("✅ Apply Transaction", use_container_width=True):
+    if amount > 0:
         if action == "Subtract":
-            balance -= amount
+            st.session_state.balance -= amount
             operator = f"-€{amount:.2f}"
         else:
-            balance += amount
+            st.session_state.balance += amount
             operator = f"+€{amount:.2f}"
 
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         entry = {
-            "timestamp": timestamp,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "operation": operator,
             "description": description if description else "(no description)",
-            "balance": f"€{balance:.2f}"
+            "balance": f"€{st.session_state.balance:.2f}"
         }
 
-        # Save new state
-        history.append(entry)
-        storage.set("balance", balance)
-        storage.set("history", history)
+        st.session_state.history.append(entry)
+
+        storage.set("balance", st.session_state.balance)
+        storage.set("history", st.session_state.history)
+
         st.experimental_rerun()
 
-# 🔁 Reset
-with col2:
-    if st.button("🔁 Reset Balance"):
+# ------------------ Manage Buttons ------------------
+with st.container():
+    st.markdown("### 🛠️ Manage App")
+
+    if st.button("🔁 Reset Balance & Clear History", use_container_width=True):
+        st.session_state.balance = 400.0
+        st.session_state.history = []
+        st.session_state.balance_reset = True
+        st.session_state.history_erased = False
         storage.set("balance", 400.0)
         storage.set("history", [])
         st.experimental_rerun()
 
-# 🧾 Show history
-st.markdown("### 🧾 Transaction History (Last 10)")
-if history:
-    for item in reversed(history[-10:]):
+    if st.button("🗑️ Erase History Only", use_container_width=True):
+        st.session_state.history = []
+        st.session_state.history_erased = True
+        st.session_state.balance_reset = False
+        storage.set("history", [])
+        st.experimental_rerun()
+
+# ------------------ Transaction History ------------------
+st.markdown("### 🧾 Transaction History")
+
+# ✅ Only show these messages once
+if st.session_state.balance_reset:
+    st.success("Balance reset and history cleared.")
+    st.session_state.balance_reset = False
+elif st.session_state.history_erased:
+    st.success("Transaction history erased.")
+
+if st.session_state.history:
+    for item in reversed(st.session_state.history[-10:]):
         st.markdown(
-            f"- `{item['timestamp']}` | **{item['operation']}** | {item['description']} → {item['balance']}"
+            f"<div style='font-size: 14px;'>🕒 <code>{item['timestamp']}</code><br>"
+            f"{item['operation']} | {item['description']} → <b>{item['balance']}</b></div><hr>",
+            unsafe_allow_html=True
         )
-else:
+elif not st.session_state.history_erased:
     st.info("No transactions yet.")
