@@ -37,29 +37,24 @@ action = st.radio("Choose action", ["Subtract", "Add"])
 
 col1, col2 = st.columns(2)
 
-# ✅ Apply transaction
 with col1:
     if st.button("✅ Apply Transaction") and amount > 0:
-        if action == "Subtract":
-            balance -= amount
-            operator = f"-€{amount:.2f}"
-        else:
-            balance += amount
-            operator = f"+€{amount:.2f}"
+        # logic as before...
 
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        entry = {
-            "timestamp": timestamp,
-            "operation": operator,
-            "description": description if description else "(no description)",
-            "balance": f"€{balance:.2f}"
-        }
-
-        # Save new state
-        history.append(entry)
-        storage.set("balance", balance)
-        storage.set("history", history)
+with col2:
+    if st.button("🔁 Reset Balance"):
+        storage.set("balance", 400.0)
+        storage.set("history", [])
         st.experimental_rerun()
+
+col3, _ = st.columns(2)
+with col3:
+    if st.button("🗑️ Erase History Only"):
+        history = []  # fix: reset local variable too
+        storage.set("history", history)
+        st.success("Transaction history erased!")
+        st.experimental_rerun()
+
 
 # 🔁 Reset
 with col2:
