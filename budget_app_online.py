@@ -68,6 +68,15 @@ with col2:
         storage.set("history", [])
         st.experimental_rerun()
 
+col3, _ = st.columns(2)
+
+with col3:
+    if st.button("🗑️ Erase History Only"):
+        storage.set("history", [])
+        st.success("Transaction history erased!")
+        st.experimental_rerun()
+
+
 # 🧾 Show history
 st.markdown("### 🧾 Transaction History (Last 10)")
 if history:
