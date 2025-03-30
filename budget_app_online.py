@@ -166,7 +166,6 @@ elif st.session_state.show_erased_msg:
     st.success("Transaction history erased.")
     st.session_state.show_erased_msg = False
 
-# ------------------ Calendar-Style Grouped History ------------------
 st.markdown("### 🗓️ Transaction Calendar")
 
 if stored_history:
@@ -179,7 +178,7 @@ if stored_history:
     # Display by day (latest first)
     for date in sorted(grouped.keys(), reverse=True):
         st.markdown(f"<div class='transaction-date'>{date}</div>", unsafe_allow_html=True)
-        for tx in reversed(grouped[date]):
+        for tx in grouped[date]:  # ←✅ FIX: no reverse here
             st.markdown(f"""
             <div class='transaction-card'>
                 <b>{tx['operation']}</b> — {tx['description']}<br>
