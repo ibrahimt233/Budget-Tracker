@@ -35,6 +35,10 @@ h1, h2, h3 {
     margin-bottom: 10px;
     font-size: 15px;
 }
+.transaction-card .desc {
+    color: red;
+    font-weight: 500;
+}
 .transaction-card small {
     color: gray;
 }
@@ -66,24 +70,22 @@ hr {
 # ------------------ Setup Browser Storage ------------------
 storage = LocalStorage(key="balance-tracker")
 
-# ------------------ Load Data from Browser Storage ------------------
+# ------------------ Load Data ------------------
 stored_balance = storage.get("balance")
 stored_history = storage.get("history")
 
-# Ensure valid types
 if not isinstance(stored_balance, (int, float)):
     stored_balance = 400.0
-
 if not isinstance(stored_history, list):
     stored_history = []
 
-# ------------------ Session Flags for Notifications ------------------
+# ------------------ Session Flags ------------------
 if "show_erased_msg" not in st.session_state:
     st.session_state.show_erased_msg = False
 if "show_reset_msg" not in st.session_state:
     st.session_state.show_reset_msg = False
 
-# ------------------ Display Current Balance ------------------
+# ------------------ Display Balance ------------------
 st.markdown(f"""
 <div class='balance-card'>
     💳 <br>
@@ -92,7 +94,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ------------------ Transaction Input ------------------
+# ------------------ Input ------------------
 with st.container():
     st.markdown("### ➕ Enter a Transaction")
     amount = st.number_input("Amount", step=0.01, format="%.2f")
@@ -157,32 +159,30 @@ stored_history = storage.get("history")
 if not isinstance(stored_history, list):
     stored_history = []
 
-# ------------------ Notification Messages ------------------
+# ------------------ Notifications ------------------
 if st.session_state.show_reset_msg:
     st.success("Balance reset and history cleared.")
     st.session_state.show_reset_msg = False
-
 elif st.session_state.show_erased_msg:
     st.success("Transaction history erased.")
     st.session_state.show_erased_msg = False
 
-# ------------------ Calendar-Style Grouped History ------------------
+# ------------------ Calendar-Style History ------------------
 st.markdown("### 🗓️ Transaction Calendar")
 
 if stored_history:
-    # Group transactions by date
+    from collections import defaultdict
     grouped = defaultdict(list)
     for item in stored_history:
         date = item['timestamp'].split(' ')[0]
         grouped[date].append(item)
 
-    # Display by day (latest first)
     for date in sorted(grouped.keys(), reverse=True):
         st.markdown(f"<div class='transaction-date'>{date}</div>", unsafe_allow_html=True)
         for tx in grouped[date]:
             st.markdown(f"""
             <div class='transaction-card'>
-                <b>{tx['operation']}</b> — {tx['description']}<br>
+                <b>{tx['operation']}</b> — <span class='desc'>{tx['description']}</span><br>
                 <small>{tx['timestamp']} → <b>{tx['balance']}</b></small>
             </div>
             """, unsafe_allow_html=True)
