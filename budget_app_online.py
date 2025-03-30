@@ -3,10 +3,9 @@ from streamlit_browser_storage import LocalStorage
 from datetime import datetime
 
 # ------------------ App Config ------------------
-# ----------- Config -----------
 st.set_page_config(page_title="💳 Smart Budget", layout="centered", page_icon="💳")
 
-# ----------- CSS Styling -----------
+# ------------------ Custom CSS Styling ------------------
 st.markdown("""
 <style>
 body {
@@ -27,29 +26,31 @@ h1, h2, h3 {
     margin-bottom: 20px;
     box-shadow: 0 8px 20px rgba(0,0,0,0.1);
 }
-.budget-card {
+.transaction-card {
     background-color: white;
     padding: 15px 20px;
     border-radius: 16px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     margin-bottom: 10px;
+    font-size: 15px;
 }
-.progress-bar {
-    height: 8px;
-    border-radius: 8px;
-    background-color: #eee;
-    overflow: hidden;
+.transaction-card small {
+    color: gray;
 }
-.progress-bar-fill {
-    height: 8px;
-    border-radius: 8px;
+input, textarea, .stTextInput, .stNumberInput {
+    border-radius: 12px !important;
 }
-.transaction-card {
-    background-color: white;
-    padding: 12px 16px;
-    border-radius: 14px;
-    margin-bottom: 10px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+.stButton > button {
+    border-radius: 12px;
+    background-color: #3f51b5;
+    color: white;
+    font-weight: 500;
+    font-size: 16px;
+    padding: 0.6em 1.2em;
+}
+hr {
+    border: none;
+    border-top: 1px solid #eee;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -79,7 +80,7 @@ st.markdown(f"""
 <div class='balance-card'>
     💳 <br>
     Available Balance<br>
-    <span style='font-size: 36px; font-weight: bold;'>€{balance:,.2f}</span>
+    <span style='font-size: 36px; font-weight: bold;'>€{stored_balance:,.2f}</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -162,10 +163,11 @@ st.markdown("### 🧾 Transaction History")
 
 if stored_history:
     for item in reversed(stored_history[-10:]):
-        st.markdown(
-            f"<div style='font-size: 14px;'>🕒 <code>{item['timestamp']}</code><br>"
-            f"{item['operation']} | {item['description']} → <b>{item['balance']}</b></div><hr>",
-            unsafe_allow_html=True
-        )
+        st.markdown(f"""
+        <div class='transaction-card'>
+            <b>{item['operation']}</b> — {item['description']}<br>
+            <small>{item['timestamp']} → <b>{item['balance']}</b></small>
+        </div>
+        """, unsafe_allow_html=True)
 else:
     st.info("No transactions yet.")
