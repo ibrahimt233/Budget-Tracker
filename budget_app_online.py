@@ -72,24 +72,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ----------- Budget Categories (Static Example) -----------
-st.markdown("#### 📊 Your Budget")
 
-def budget_card(label, amount_used, total, color):
-    percent = min(int((amount_used / total) * 100), 100)
-    st.markdown(f"""
-    <div class='budget-card'>
-        <b>{label}</b>
-        <div class='progress-bar'>
-            <div class='progress-bar-fill' style='width: {percent}%; background-color: {color};'></div>
-        </div>
-        <small>{amount_used:.2f} of {total:.2f} used</small>
-    </div>
-    """, unsafe_allow_html=True)
-
-budget_card("Food and Drinks", 180, 300, "#ff7043")
-budget_card("Entertainment", 50, 200, "#42a5f5")
-budget_card("Transport", 90, 150, "#66bb6a")
 
 # ----------- Add Transaction -----------
 st.markdown("### ➕ Add Transaction")
