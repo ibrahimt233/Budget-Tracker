@@ -127,4 +127,64 @@ if st.button("✅ Apply Transaction", use_container_width=True):
             st.experimental_rerun()
 
 # ------------------ Manage Buttons ------------------
-with st
+with st.container():
+    st.markdown("### 🛠️ Manage App")
+
+    if st.button("🔁 Reset Balance & Clear History", use_container_width=True):
+        try:
+            storage.set("balance", 400.0)
+            storage.delete("history")
+            st.session_state.show_reset_msg = True
+            st.session_state.show_erased_msg = False
+        except Exception as e:
+            st.error(f"Reset failed: {e}")
+        else:
+            st.experimental_rerun()
+
+    if st.button("🗑️ Erase History Only", use_container_width=True):
+        try:
+            storage.delete("history")
+            st.session_state.show_erased_msg = True
+            st.session_state.show_reset_msg = False
+        except Exception as e:
+            st.error(f"Failed to erase history: {e}")
+        else:
+            st.experimental_rerun()
+
+# ------------------ Reload Fresh After Action ------------------
+stored_balance = storage.get("balance")
+stored_history = storage.get("history")
+if not isinstance(stored_history, list):
+    stored_history = []
+
+# ------------------ Notification Messages ------------------
+if st.session_state.show_reset_msg:
+    st.success("Balance reset and history cleared.")
+    st.session_state.show_reset_msg = False
+
+elif st.session_state.show_erased_msg:
+    st.success("Transaction history erased.")
+    st.session_state.show_erased_msg = False
+
+# ------------------ Calendar-Style Grouped History ------------------
+st.markdown("### 🗓️ Transaction Calendar")
+
+if stored_history:
+    # Group transactions by date
+    grouped = defaultdict(list)
+    for item in stored_history:
+        date = item['timestamp'].split(' ')[0]
+        grouped[date].append(item)
+
+    # Display by day (latest first)
+    for date in sorted(grouped.keys(), reverse=True):
+        st.markdown(f"<div class='transaction-date'>{date}</div>", unsafe_allow_html=True)
+        for tx in grouped[date]:
+            st.markdown(f"""
+            <div class='transaction-card'>
+                <b>{tx['operation']}</b> — {tx['description']}<br>
+                <small>{tx['timestamp']} → <b>{tx['balance']}</b></small>
+            </div>
+            """, unsafe_allow_html=True)
+else:
+    st.info("No transactions yet.")
