@@ -3,8 +3,56 @@ from streamlit_browser_storage import LocalStorage
 from datetime import datetime
 
 # ------------------ App Config ------------------
-st.set_page_config(page_title="💶 Balance Tracker", page_icon="💶", layout="centered")
-st.markdown("<h1 style='text-align: center;'>📋 Balance Tracker</h1>", unsafe_allow_html=True)
+# ----------- Config -----------
+st.set_page_config(page_title="💳 Smart Budget", layout="centered", page_icon="💳")
+
+# ----------- CSS Styling -----------
+st.markdown("""
+<style>
+body {
+    background-color: #f3f6fa;
+    font-family: 'Segoe UI', sans-serif;
+}
+h1, h2, h3 {
+    color: #111;
+}
+.balance-card {
+    background: linear-gradient(135deg, #3f51b5, #5c6bc0);
+    color: white;
+    padding: 30px;
+    border-radius: 20px;
+    text-align: center;
+    font-size: 26px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+.budget-card {
+    background-color: white;
+    padding: 15px 20px;
+    border-radius: 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    margin-bottom: 10px;
+}
+.progress-bar {
+    height: 8px;
+    border-radius: 8px;
+    background-color: #eee;
+    overflow: hidden;
+}
+.progress-bar-fill {
+    height: 8px;
+    border-radius: 8px;
+}
+.transaction-card {
+    background-color: white;
+    padding: 12px 16px;
+    border-radius: 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+</style>
+""", unsafe_allow_html=True)
 
 # ------------------ Setup Browser Storage ------------------
 storage = LocalStorage(key="balance-tracker")
@@ -27,10 +75,13 @@ if "show_reset_msg" not in st.session_state:
     st.session_state.show_reset_msg = False
 
 # ------------------ Display Current Balance ------------------
-st.markdown(
-    f"<div style='text-align:center; font-size: 24px;'>💰 Current Balance: <b>€{stored_balance:.2f}</b></div>",
-    unsafe_allow_html=True
-)
+st.markdown(f"""
+<div class='balance-card'>
+    💳 <br>
+    Available Balance<br>
+    <span style='font-size: 36px; font-weight: bold;'>€{balance:,.2f}</span>
+</div>
+""", unsafe_allow_html=True)
 
 # ------------------ Transaction Input ------------------
 with st.container():
