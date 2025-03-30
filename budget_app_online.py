@@ -1,6 +1,7 @@
 import streamlit as st
 from streamlit_browser_storage import LocalStorage
 from datetime import datetime
+from collections import defaultdict
 
 # ------------------ App Config ------------------
 st.set_page_config(page_title="💳 Smart Budget", layout="centered", page_icon="💳")
@@ -36,6 +37,13 @@ h1, h2, h3 {
 }
 .transaction-card small {
     color: gray;
+}
+.transaction-date {
+    margin-top: 25px;
+    margin-bottom: 10px;
+    font-size: 17px;
+    font-weight: bold;
+    color: #3f51b5;
 }
 input, textarea, .stTextInput, .stNumberInput {
     border-radius: 12px !important;
@@ -158,16 +166,25 @@ elif st.session_state.show_erased_msg:
     st.success("Transaction history erased.")
     st.session_state.show_erased_msg = False
 
-# ------------------ Transaction History ------------------
-st.markdown("### 🧾 Transaction History")
+# ------------------ Calendar-Style Grouped History ------------------
+st.markdown("### 🗓️ Transaction Calendar")
 
 if stored_history:
-    for item in reversed(stored_history[-10:]):
-        st.markdown(f"""
-        <div class='transaction-card'>
-            <b>{item['operation']}</b> — {item['description']}<br>
-            <small>{item['timestamp']} → <b>{item['balance']}</b></small>
-        </div>
-        """, unsafe_allow_html=True)
+    # Group transactions by date
+    grouped = defaultdict(list)
+    for item in stored_history:
+        date = item['timestamp'].split(' ')[0]
+        grouped[date].append(item)
+
+    # Display by day (latest first)
+    for date in sorted(grouped.keys(), reverse=True):
+        st.markdown(f"<div class='transaction-date'>{date}</div>", unsafe_allow_html=True)
+        for tx in reversed(grouped[date]):
+            st.markdown(f"""
+            <div class='transaction-card'>
+                <b>{tx['operation']}</b> — {tx['description']}<br>
+                <small>{tx['timestamp']} → <b>{tx['balance']}</b></small>
+            </div>
+            """, unsafe_allow_html=True)
 else:
     st.info("No transactions yet.")
