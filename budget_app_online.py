@@ -39,6 +39,14 @@ h1, h2, h3 {
     color: red;
     font-weight: 500;
 }
+.transaction-card .amount.income {
+    color: #4caf50;
+    font-weight: bold;
+}
+.transaction-card .amount.expense {
+    color: red;
+    font-weight: bold;
+}
 .transaction-card small {
     color: gray;
 }
@@ -171,7 +179,6 @@ elif st.session_state.show_erased_msg:
 st.markdown("### 🗓️ Transaction Calendar")
 
 if stored_history:
-    from collections import defaultdict
     grouped = defaultdict(list)
     for item in stored_history:
         date = item['timestamp'].split(' ')[0]
@@ -180,9 +187,12 @@ if stored_history:
     for date in sorted(grouped.keys(), reverse=True):
         st.markdown(f"<div class='transaction-date'>{date}</div>", unsafe_allow_html=True)
         for tx in grouped[date]:
+            is_income = tx["operation"].startswith("+")
+            amount_class = "income" if is_income else "expense"
             st.markdown(f"""
             <div class='transaction-card'>
-                <b>{tx['operation']}</b> — <span class='desc'>{tx['description']}</span><br>
+                <span class='amount {amount_class}'>{tx['operation']}</span>
+                — <span class='desc'>{tx['description']}</span><br>
                 <small>{tx['timestamp']} → <b>{tx['balance']}</b></small>
             </div>
             """, unsafe_allow_html=True)
