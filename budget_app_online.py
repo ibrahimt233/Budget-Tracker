@@ -10,11 +10,12 @@ st.set_page_config(page_title="💳 Smart Budget", layout="centered", page_icon=
 st.markdown("""
 <style>
 body {
-    background-color: #f3f6fa;
+    background: linear-gradient(to bottom, #000000, #2c2c2c);
     font-family: 'Segoe UI', sans-serif;
+    color: #f1f1f1;
 }
 h1, h2, h3 {
-    color: #111;
+    color: #ffffff;
 }
 .balance-card {
     background: linear-gradient(135deg, #3f51b5, #5c6bc0);
@@ -25,44 +26,44 @@ h1, h2, h3 {
     font-size: 26px;
     font-weight: 600;
     margin-bottom: 20px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
 }
 .transaction-card {
-    background-color: white;
+    background-color: #1e1e1e;
     padding: 15px 20px;
     border-radius: 16px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
     margin-bottom: 10px;
     font-size: 15px;
 }
 .transaction-card .desc {
-    color: red;
+    color: #ff4c4c;
     font-weight: 500;
 }
 .transaction-card .amount.income {
-    color: #4caf50;
+    color: #00e676;
     font-weight: bold;
 }
 .transaction-card .amount.expense {
-    color: red;
+    color: #ff4c4c;
     font-weight: bold;
 }
 .transaction-card small {
-    color: gray;
+    color: #bbbbbb;
 }
 .transaction-date {
     margin-top: 25px;
     margin-bottom: 10px;
     font-size: 17px;
     font-weight: bold;
-    color: #3f51b5;
+    color: #80d8ff;
 }
 input, textarea, .stTextInput, .stNumberInput {
     border-radius: 12px !important;
 }
 .stButton > button {
     border-radius: 12px;
-    background-color: #3f51b5;
+    background-color: #2196f3;
     color: white;
     font-weight: 500;
     font-size: 16px;
@@ -70,7 +71,7 @@ input, textarea, .stTextInput, .stNumberInput {
 }
 hr {
     border: none;
-    border-top: 1px solid #eee;
+    border-top: 1px solid #444;
 }
 </style>
 """, unsafe_allow_html=True)
