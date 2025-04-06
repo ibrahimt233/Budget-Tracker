@@ -1,12 +1,13 @@
 import streamlit as st
 from streamlit_browser_storage import LocalStorage
-from datetime import datetime
+from datetime import datetime, timedelta
 from collections import defaultdict
+import matplotlib.pyplot as plt
 
 # ------------------ App Config ------------------
 st.set_page_config(page_title="💳 Smart Budget", layout="centered", page_icon="💳")
 
-# ------------------ Custom CSS Styling ------------------
+# ------------------ Custom CSS ------------------
 st.markdown("""
 <style>
 body {
@@ -58,21 +59,6 @@ h1, h2, h3 {
     font-weight: bold;
     color: #80d8ff;
 }
-input, textarea, .stTextInput, .stNumberInput {
-    border-radius: 12px !important;
-}
-.stButton > button {
-    border-radius: 12px;
-    background-color: #2196f3;
-    color: white;
-    font-weight: 500;
-    font-size: 16px;
-    padding: 0.6em 1.2em;
-}
-hr {
-    border: none;
-    border-top: 1px solid #444;
-}
 </style>
 """, unsafe_allow_html=True)
 
@@ -82,17 +68,28 @@ storage = LocalStorage(key="balance-tracker")
 # ------------------ Load Data ------------------
 stored_balance = storage.get("balance")
 stored_history = storage.get("history")
+weekly_allowance = storage.get("weekly_allowance")
 
 if not isinstance(stored_balance, (int, float)):
     stored_balance = 400.0
 if not isinstance(stored_history, list):
     stored_history = []
+if not isinstance(weekly_allowance, (int, float)):
+    weekly_allowance = 100.0
 
 # ------------------ Session Flags ------------------
 if "show_erased_msg" not in st.session_state:
     st.session_state.show_erased_msg = False
 if "show_reset_msg" not in st.session_state:
     st.session_state.show_reset_msg = False
+
+# ------------------ Weekly Allowance Setup ------------------
+with st.sidebar:
+    st.markdown("### 🗓️ Weekly Allowance")
+    weekly_allowance_input = st.number_input("Set your weekly allowance (€)", value=weekly_allowance, step=1.0)
+    if weekly_allowance_input != weekly_allowance:
+        weekly_allowance = weekly_allowance_input
+        storage.set("weekly_allowance", weekly_allowance)
 
 # ------------------ Display Balance ------------------
 st.markdown(f"""
@@ -103,12 +100,41 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ------------------ Input ------------------
-with st.container():
-    st.markdown("### ➕ Enter a Transaction")
-    amount = st.number_input("Amount", step=0.01, format="%.2f")
-    description = st.text_input("Description (e.g., groceries)")
-    action = st.radio("Action", ["Subtract", "Add"], horizontal=True)
+# ------------------ Weekly Spending Pie Chart ------------------
+st.markdown("### 📊 Weekly Spending Overview")
+
+# Filter expenses from current week
+today = datetime.today()
+start_of_week = today - timedelta(days=today.weekday())  # Monday
+
+weekly_spending = 0.0
+for tx in stored_history:
+    tx_time = datetime.strptime(tx["timestamp"], "%Y-%m-%d %H:%M:%S")
+    if tx_time >= start_of_week and tx["operation"].startswith("-"):
+        amount = float(tx["operation"].replace("€", "").replace("-", ""))
+        weekly_spending += amount
+
+remaining = max(0, weekly_allowance - weekly_spending)
+spent = min(weekly_spending, weekly_allowance)
+
+# Pie chart
+fig, ax = plt.subplots()
+ax.pie([spent, remaining],
+       labels=["Spent", "Left"],
+       colors=["#ff4c4c", "#00e676"],
+       startangle=90,
+       autopct='%1.1f%%',
+       wedgeprops={'edgecolor': 'black'})
+ax.axis("equal")
+st.pyplot(fig)
+
+st.markdown(f"**Spent this week:** €{spent:.2f} / €{weekly_allowance:.2f}")
+
+# ------------------ Input Section ------------------
+st.markdown("### ➕ Enter a Transaction")
+amount = st.number_input("Amount", step=0.01, format="%.2f")
+description = st.text_input("Description (e.g., groceries)")
+action = st.radio("Action", ["Subtract", "Add"], horizontal=True)
 
 if st.button("✅ Apply Transaction", use_container_width=True):
     if amount > 0:
@@ -138,31 +164,30 @@ if st.button("✅ Apply Transaction", use_container_width=True):
             st.experimental_rerun()
 
 # ------------------ Manage Buttons ------------------
-with st.container():
-    st.markdown("### 🛠️ Manage App")
+st.markdown("### 🛠️ Manage App")
 
-    if st.button("🔁 Reset Balance & Clear History", use_container_width=True):
-        try:
-            storage.set("balance", 400.0)
-            storage.delete("history")
-            st.session_state.show_reset_msg = True
-            st.session_state.show_erased_msg = False
-        except Exception as e:
-            st.error(f"Reset failed: {e}")
-        else:
-            st.experimental_rerun()
+if st.button("🔁 Reset Balance & Clear History", use_container_width=True):
+    try:
+        storage.set("balance", 400.0)
+        storage.delete("history")
+        st.session_state.show_reset_msg = True
+        st.session_state.show_erased_msg = False
+    except Exception as e:
+        st.error(f"Reset failed: {e}")
+    else:
+        st.experimental_rerun()
 
-    if st.button("🗑️ Erase History Only", use_container_width=True):
-        try:
-            storage.delete("history")
-            st.session_state.show_erased_msg = True
-            st.session_state.show_reset_msg = False
-        except Exception as e:
-            st.error(f"Failed to erase history: {e}")
-        else:
-            st.experimental_rerun()
+if st.button("🗑️ Erase History Only", use_container_width=True):
+    try:
+        storage.delete("history")
+        st.session_state.show_erased_msg = True
+        st.session_state.show_reset_msg = False
+    except Exception as e:
+        st.error(f"Failed to erase history: {e}")
+    else:
+        st.experimental_rerun()
 
-# ------------------ Reload Fresh After Action ------------------
+# ------------------ Reload Data After Action ------------------
 stored_balance = storage.get("balance")
 stored_history = storage.get("history")
 if not isinstance(stored_history, list):
@@ -176,7 +201,7 @@ elif st.session_state.show_erased_msg:
     st.success("Transaction history erased.")
     st.session_state.show_erased_msg = False
 
-# ------------------ Calendar-Style History ------------------
+# ------------------ Calendar View ------------------
 st.markdown("### 🗓️ Transaction Calendar")
 
 if stored_history:
